@@ -130,6 +130,7 @@ class BarberController extends Controller
                 $lat = $res['results'][0]['geometry']['location']['lat'];
                 $lng = $res['results'][0]['geometry']['location']['lng'];
             }
+         
         } elseif(!empty($lat) && !empty($lng)) {
             $res = $this->searchGeo($lat.','.$lng);
 
@@ -156,7 +157,7 @@ class BarberController extends Controller
         }
 
         $array['data'] = $barbers;
-        $array['loc'] = 'São Paulo';
+        $array['loc'] = $city;
 
         return $array;
     }
@@ -175,8 +176,8 @@ class BarberController extends Controller
             $barber['available'] = [];
 
             // Verificando favorito
-            $cFavorite = UserFavorite::where('user_id', $this->loggedUser->id)
-                ->where('barber_id', $barber->id)
+            $cFavorite = UserFavorite::where('id_user', $this->loggedUser->id)
+                ->where('id_barber', $barber->id)
                 ->count();
             if($cFavorite > 0) {
                 $barber['favorited'] = true;
@@ -184,7 +185,7 @@ class BarberController extends Controller
 
             // Pegando as fotos do Barbeiro
             $barber['photos'] = BarberPhotos::select(['id', 'url'])
-                ->where('barber_id', $barber->id)
+                ->where('id_barber', $barber->id)
                 ->get();
             foreach($barber['photos'] as $bpkey => $bpvalue) {
                 $barber['photos'][$bpkey]['url'] = url('media/uploads/'.$barber['photos'][$bpkey]['url']);
@@ -192,19 +193,19 @@ class BarberController extends Controller
 
             // Pegando os serviços do Barbeiro
             $barber['services'] = BarberServices::select(['id', 'name', 'price'])
-                ->where('barber_id', $barber->id)
+                ->where('id_barber', $barber->id)
                 ->get();
 
             // Pegando os depoimentos do Barbeiro
             $barber['testimonials'] = BarberTestimonial::select(['id', 'name', 'rate', 'body'])
-                ->where('barber_id', $barber->id)
+                ->where('id_barber', $barber->id)
                 ->get();
 
             // Pegando disponibilidade do Barbeiro
             $availability = [];
 
             // - Pegando a disponibilidade crua
-            $avails = BarberAvailability::where('barber_id', $barber->id)->get();
+            $avails = BarberAvailability::where('id_barber', $barber->id)->get();
             $availWeekdays = [];
             foreach($avails as $item) {
                 $availWeekdays[$item['weekday']] = explode(',', $item['hours']);
@@ -212,7 +213,7 @@ class BarberController extends Controller
 
             // - Pegar os agendamentos dos próximos 20 dias
             $appointments = [];
-            $appQuery = UserAppointment::where('barber_id', $barber->id)
+            $appQuery = UserAppointment::where('id_barber', $barber->id)
                 ->whereBetween('ap_datetime', [
                     date('Y-m-d').' 00:00:00',
                     date('Y-m-d', strtotime('+20 days')).' 23:59:59'
